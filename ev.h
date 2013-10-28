@@ -240,10 +240,10 @@ enum {
 #endif
 
 #ifndef EV_CB_DECLARE
-# define EV_CB_DECLARE(type) void (*cb)(EV_P_ struct type *w, int revents);
+# define EV_CB_DECLARE(type) void (*cb)(EV_P_ struct type *w, int revents,void* arg);void* arg;
 #endif
 #ifndef EV_CB_INVOKE
-# define EV_CB_INVOKE(watcher,revents) (watcher)->cb (EV_A_ (watcher), (revents))
+# define EV_CB_INVOKE(watcher,revents) (watcher)->cb (EV_A_ (watcher), (revents),(watcher)->arg)
 #endif
 
 /* not official, do not use */
@@ -675,11 +675,12 @@ EV_API_DECL void ev_resume  (EV_P) EV_THROW;
 
 /* these may evaluate ev multiple times, and the other arguments at most once */
 /* either use ev_init + ev_TYPE_set, or the ev_TYPE_init macro, below, to first initialise a watcher */
-#define ev_init(ev,cb_) do {			\
+#define ev_init(ev,cb__,arg_) do {			\
   ((ev_watcher *)(void *)(ev))->active  =	\
   ((ev_watcher *)(void *)(ev))->pending = 0;	\
   ev_set_priority ((ev), 0);			\
-  ev_set_cb ((ev), cb_);			\
+  ev_set_cb ((ev), cb__);			\
+  ev_set_arg((ev),arg_);                   \
 } while (0)
 
 #define ev_io_set(ev,fd_,events_)            do { (ev)->fd = (fd_); (ev)->events = (events_) | EV__IOFDSET; } while (0)
@@ -696,24 +697,25 @@ EV_API_DECL void ev_resume  (EV_P) EV_THROW;
 #define ev_cleanup_set(ev)                   /* nop, yes, this is a serious in-joke */
 #define ev_async_set(ev)                     /* nop, yes, this is a serious in-joke */
 
-#define ev_io_init(ev,cb,fd,events)          do { ev_init ((ev), (cb)); ev_io_set ((ev),(fd),(events)); } while (0)
-#define ev_timer_init(ev,cb,after,repeat)    do { ev_init ((ev), (cb)); ev_timer_set ((ev),(after),(repeat)); } while (0)
-#define ev_periodic_init(ev,cb,ofs,ival,rcb) do { ev_init ((ev), (cb)); ev_periodic_set ((ev),(ofs),(ival),(rcb)); } while (0)
-#define ev_signal_init(ev,cb,signum)         do { ev_init ((ev), (cb)); ev_signal_set ((ev), (signum)); } while (0)
-#define ev_child_init(ev,cb,pid,trace)       do { ev_init ((ev), (cb)); ev_child_set ((ev),(pid),(trace)); } while (0)
-#define ev_stat_init(ev,cb,path,interval)    do { ev_init ((ev), (cb)); ev_stat_set ((ev),(path),(interval)); } while (0)
-#define ev_idle_init(ev,cb)                  do { ev_init ((ev), (cb)); ev_idle_set ((ev)); } while (0)
-#define ev_prepare_init(ev,cb)               do { ev_init ((ev), (cb)); ev_prepare_set ((ev)); } while (0)
-#define ev_check_init(ev,cb)                 do { ev_init ((ev), (cb)); ev_check_set ((ev)); } while (0)
-#define ev_embed_init(ev,cb,other)           do { ev_init ((ev), (cb)); ev_embed_set ((ev),(other)); } while (0)
-#define ev_fork_init(ev,cb)                  do { ev_init ((ev), (cb)); ev_fork_set ((ev)); } while (0)
-#define ev_cleanup_init(ev,cb)               do { ev_init ((ev), (cb)); ev_cleanup_set ((ev)); } while (0)
-#define ev_async_init(ev,cb)                 do { ev_init ((ev), (cb)); ev_async_set ((ev)); } while (0)
+#define ev_io_init(ev,cb,fd,events,arg)          do { ev_init ((ev), (cb),(arg)); ev_io_set ((ev),(fd),(events)); } while (0)
+#define ev_timer_init(ev,cb,after,repeat,arg)    do { ev_init ((ev), (cb),(arg)); ev_timer_set ((ev),(after),(repeat)); } while (0)
+#define ev_periodic_init(ev,cb,ofs,ival,rcb,arg) do { ev_init ((ev), (cb),(arg)); ev_periodic_set ((ev),(ofs),(ival),(rcb)); } while (0)
+#define ev_signal_init(ev,cb,signum,arg)         do { ev_init ((ev), (cb),(arg)); ev_signal_set ((ev), (signum)); } while (0)
+#define ev_child_init(ev,cb,pid,trace,arg)       do { ev_init ((ev), (cb),(arg)); ev_child_set ((ev),(pid),(trace)); } while (0)
+#define ev_stat_init(ev,cb,path,interval,arg)    do { ev_init ((ev), (cb),(arg)); ev_stat_set ((ev),(path),(interval)); } while (0)
+#define ev_idle_init(ev,cb,arg)                  do { ev_init ((ev), (cb),(arg)); ev_idle_set ((ev)); } while (0)
+#define ev_prepare_init(ev,cb,arg)               do { ev_init ((ev), (cb),(arg)); ev_prepare_set ((ev)); } while (0)
+#define ev_check_init(ev,cb,arg)                 do { ev_init ((ev), (cb),(arg)); ev_check_set ((ev)); } while (0)
+#define ev_embed_init(ev,cb,other,arg)           do { ev_init ((ev), (cb),(arg)); ev_embed_set ((ev),(other)); } while (0)
+#define ev_fork_init(ev,cb,arg)                  do { ev_init ((ev), (cb),(arg)); ev_fork_set ((ev)); } while (0)
+#define ev_cleanup_init(ev,cb,arg)               do { ev_init ((ev), (cb),(arg)); ev_cleanup_set ((ev)); } while (0)
+#define ev_async_init(ev,cb,arg)                 do { ev_init ((ev), (cb),(arg)); ev_async_set ((ev)); } while (0)
 
 #define ev_is_pending(ev)                    (0 + ((ev_watcher *)(void *)(ev))->pending) /* ro, true when watcher is waiting for callback invocation */
 #define ev_is_active(ev)                     (0 + ((ev_watcher *)(void *)(ev))->active) /* ro, true when the watcher has been started */
 
 #define ev_cb(ev)                            (ev)->cb /* rw */
+#define ev_arg(ev)                          (ev)->arg
 
 #if EV_MINPRI == EV_MAXPRI
 # define ev_priority(ev)                     ((ev), EV_MINPRI)
@@ -728,6 +730,11 @@ EV_API_DECL void ev_resume  (EV_P) EV_THROW;
 #ifndef ev_set_cb
 # define ev_set_cb(ev,cb_)                   ev_cb (ev) = (cb_)
 #endif
+
+#ifndef ev_set_arg
+# define ev_set_arg(ev,arg_)                   ev_arg (ev) = (arg_)
+#endif
+
 
 /* stopping (enabling, adding) a watcher does nothing if it is already running */
 /* stopping (disabling, deleting) a watcher does nothing unless its already running */
