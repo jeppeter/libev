@@ -172,7 +172,7 @@ ev_x_cb (struct event *ev, int revents)
 }
 
 static void
-ev_x_cb_sig (EV_P_ struct ev_signal *w, int revents)
+ev_x_cb_sig (EV_P_ struct ev_signal *w, int revents,void* arg)
 {
   struct event *ev = (struct event *)(((char *)w) - offsetof (struct event, iosig.sig));
 
@@ -183,7 +183,7 @@ ev_x_cb_sig (EV_P_ struct ev_signal *w, int revents)
 }
 
 static void
-ev_x_cb_io (EV_P_ struct ev_io *w, int revents)
+ev_x_cb_io (EV_P_ struct ev_io *w, int revents,void* arg)
 {
   struct event *ev = (struct event *)(((char *)w) - offsetof (struct event, iosig.io));
 
@@ -194,7 +194,7 @@ ev_x_cb_io (EV_P_ struct ev_io *w, int revents)
 }
 
 static void
-ev_x_cb_to (EV_P_ struct ev_timer *w, int revents)
+ev_x_cb_to (EV_P_ struct ev_timer *w, int revents,void* arg)
 {
   struct event *ev = (struct event *)(((char *)w) - offsetof (struct event, to));
 
@@ -206,11 +206,11 @@ ev_x_cb_to (EV_P_ struct ev_timer *w, int revents)
 void event_set (struct event *ev, int fd, short events, void (*cb)(int, short, void *), void *arg)
 {
   if (events & EV_SIGNAL)
-    ev_init (&ev->iosig.sig, ev_x_cb_sig);
+    ev_init (&ev->iosig.sig, ev_x_cb_sig,NULL);
   else
-    ev_init (&ev->iosig.io, ev_x_cb_io);
+    ev_init (&ev->iosig.io, ev_x_cb_io,NULL);
 
-  ev_init (&ev->to, ev_x_cb_to);
+  ev_init (&ev->to, ev_x_cb_to,NULL);
 
   ev->ev_base     = ev_x_cur; /* not threadsafe, but it's how libevent works */
   ev->ev_fd       = fd;

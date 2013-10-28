@@ -1528,7 +1528,8 @@ typedef struct
   #include "ev_wrap.h"
 
   static struct ev_loop default_loop_struct;
-  EV_API_DECL struct ev_loop *ev_default_loop_ptr = 0; /* needs to be initialised to make it a definition despite extern */
+  //EV_API_DECL struct ev_loop *ev_default_loop_ptr = 0; /* needs to be initialised to make it a definition despite extern */
+  struct ev_loop *ev_default_loop_ptr = 0; /* needs to be initialised to make it a definition despite extern */
 
 #else
 
@@ -1684,7 +1685,7 @@ array_realloc (int elem, void *base, int *cur, int cnt)
 
 /* dummy callback for pending events */
 static void noinline
-pendingcb (EV_P_ ev_prepare *w, int revents)
+pendingcb (EV_P_ ev_prepare *w, int revents,void* arg)
 {
 }
 
@@ -2157,7 +2158,8 @@ evpipe_write (EV_P_ EV_ATOMIC_T *flag)
       if (evpipe [0] < 0)
         {
           uint64_t counter = 1;
-          write (evpipe [1], &counter, sizeof (uint64_t));
+		  int nousedret;
+          nousedret = write (evpipe [1], &counter, sizeof (uint64_t));
         }
       else
 #endif
@@ -2169,7 +2171,9 @@ evpipe_write (EV_P_ EV_ATOMIC_T *flag)
           buf.len = 1;
           WSASend (EV_FD_TO_WIN32_HANDLE (evpipe [1]), &buf, 1, &sent, 0, 0, 0);
 #else
-          write (evpipe [1], &(evpipe [1]), 1);
+			
+		  int nousedret;
+          nousedret = write (evpipe [1], &(evpipe [1]), 1);
 #endif
         }
 
@@ -2180,7 +2184,7 @@ evpipe_write (EV_P_ EV_ATOMIC_T *flag)
 /* called whenever the libev signal pipe */
 /* got some events (signal, async) */
 static void
-pipecb (EV_P_ ev_io *iow, int revents)
+pipecb (EV_P_ ev_io *iow, int revents,void* arg)
 {
   int i;
 
@@ -2190,7 +2194,8 @@ pipecb (EV_P_ ev_io *iow, int revents)
       if (evpipe [0] < 0)
         {
           uint64_t counter;
-          read (evpipe [1], &counter, sizeof (uint64_t));
+		  int nousedret;
+          nousedret = read (evpipe [1], &counter, sizeof (uint64_t));
         }
       else
 #endif
@@ -2204,7 +2209,8 @@ pipecb (EV_P_ ev_io *iow, int revents)
           buf.len = sizeof (dummy);
           WSARecv (EV_FD_TO_WIN32_HANDLE (evpipe [0]), &buf, 1, &recvd, &flags, 0, 0);
 #else
-          read (evpipe [0], &dummy, sizeof (dummy));
+		 int nousedret;
+         nousedret = read (evpipe [0], &dummy, sizeof (dummy));
 #endif
         }
     }
@@ -2299,7 +2305,7 @@ ev_feed_signal_event (EV_P_ int signum) EV_THROW
 
 #if EV_USE_SIGNALFD
 static void
-sigfdcb (EV_P_ ev_io *iow, int revents)
+sigfdcb (EV_P_ ev_io *iow, int revents,void* arg)
 {
   struct signalfd_siginfo si[2], *sip; /* these structs are big */
 
@@ -2356,7 +2362,7 @@ child_reap (EV_P_ int chain, int pid, int status)
 
 /* called on sigchld etc., calls waitpid */
 static void
-childcb (EV_P_ ev_signal *sw, int revents)
+childcb (EV_P_ ev_signal *sw, int revents,void* arg)
 {
   int pid, status;
 
@@ -2616,10 +2622,10 @@ loop_init (EV_P_ unsigned int flags) EV_THROW
       if (!backend && (flags & EVBACKEND_SELECT)) backend = select_init (EV_A_ flags);
 #endif
 
-      ev_prepare_init (&pending_w, pendingcb);
+      ev_prepare_init (&pending_w, pendingcb,NULL);
 
 #if EV_SIGNAL_ENABLE || EV_ASYNC_ENABLE
-      ev_init (&pipe_w, pipecb);
+      ev_init (&pipe_w, pipecb,NULL);
       ev_set_priority (&pipe_w, EV_MAXPRI);
 #endif
     }
@@ -2938,7 +2944,7 @@ ev_default_loop (unsigned int flags) EV_THROW
       if (ev_backend (EV_A))
         {
 #if EV_CHILD_ENABLE
-          ev_signal_init (&childev, childcb, SIGCHLD);
+          ev_signal_init (&childev, childcb, SIGCHLD,NULL);
           ev_set_priority (&childev, EV_MAXPRI);
           ev_signal_start (EV_A_ &childev);
           ev_unref (EV_A); /* child watcher should not keep loop alive */
@@ -3768,7 +3774,7 @@ ev_signal_start (EV_P_ ev_signal *w) EV_THROW
 
           sigemptyset (&sigfd_set);
 
-          ev_io_init (&sigfd_w, sigfdcb, sigfd, EV_READ);
+          ev_io_init (&sigfd_w, sigfdcb, sigfd, EV_READ,NULL);
           ev_set_priority (&sigfd_w, EV_MAXPRI);
           ev_io_start (EV_A_ &sigfd_w);
           ev_unref (EV_A); /* signalfd watcher should not keep loop alive */
@@ -3905,7 +3911,7 @@ ev_child_stop (EV_P_ ev_child *w) EV_THROW
 #define NFS_STAT_INTERVAL 30.1074891 /* for filesystems potentially failing inotify */
 #define MIN_STAT_INTERVAL  0.1074891
 
-static void noinline stat_timer_cb (EV_P_ ev_timer *w_, int revents);
+static void noinline stat_timer_cb (EV_P_ ev_timer *w_, int revents,void* arg);
 
 #if EV_USE_INOTIFY
 
@@ -4028,14 +4034,14 @@ infy_wd (EV_P_ int slot, int wd, struct inotify_event *ev)
                   infy_add (EV_A_ w); /* re-add, no matter what */
                 }
 
-              stat_timer_cb (EV_A_ &w->timer, 0);
+              stat_timer_cb (EV_A_ &w->timer, 0,NULL);
             }
         }
     }
 }
 
 static void
-infy_cb (EV_P_ ev_io *w, int revents)
+infy_cb (EV_P_ ev_io *w, int revents,void* arg)
 {
   char buf [EV_INOTIFY_BUFSIZE];
   int ofs;
@@ -4087,7 +4093,7 @@ infy_init (EV_P)
   if (fs_fd >= 0)
     {
       fd_intern (fs_fd);
-      ev_io_init (&fs_w, infy_cb, fs_fd, EV_READ);
+      ev_io_init (&fs_w, infy_cb, fs_fd, EV_READ,NULL);
       ev_set_priority (&fs_w, EV_MAXPRI);
       ev_io_start (EV_A_ &fs_w);
       ev_unref (EV_A);
@@ -4158,7 +4164,7 @@ ev_stat_stat (EV_P_ ev_stat *w) EV_THROW
 }
 
 static void noinline
-stat_timer_cb (EV_P_ ev_timer *w_, int revents)
+stat_timer_cb (EV_P_ ev_timer *w_, int revents,void* arg)
 {
   ev_stat *w = (ev_stat *)(((char *)w_) - offsetof (ev_stat, timer));
 
@@ -4208,7 +4214,7 @@ ev_stat_start (EV_P_ ev_stat *w) EV_THROW
   if (w->interval < MIN_STAT_INTERVAL && w->interval)
     w->interval = MIN_STAT_INTERVAL;
 
-  ev_timer_init (&w->timer, stat_timer_cb, 0., w->interval ? w->interval : DEF_STAT_INTERVAL);
+  ev_timer_init (&w->timer, stat_timer_cb, 0., w->interval ? w->interval : DEF_STAT_INTERVAL,NULL);
   ev_set_priority (&w->timer, ev_priority (w));
 
 #if EV_USE_INOTIFY
@@ -4384,7 +4390,7 @@ ev_embed_sweep (EV_P_ ev_embed *w) EV_THROW
 }
 
 static void
-embed_io_cb (EV_P_ ev_io *io, int revents)
+embed_io_cb (EV_P_ ev_io *io, int revents,void* arg)
 {
   ev_embed *w = (ev_embed *)(((char *)io) - offsetof (ev_embed, io));
 
@@ -4395,7 +4401,7 @@ embed_io_cb (EV_P_ ev_io *io, int revents)
 }
 
 static void
-embed_prepare_cb (EV_P_ ev_prepare *prepare, int revents)
+embed_prepare_cb (EV_P_ ev_prepare *prepare, int revents,void* arg)
 {
   ev_embed *w = (ev_embed *)(((char *)prepare) - offsetof (ev_embed, prepare));
 
@@ -4411,7 +4417,7 @@ embed_prepare_cb (EV_P_ ev_prepare *prepare, int revents)
 }
 
 static void
-embed_fork_cb (EV_P_ ev_fork *fork_w, int revents)
+embed_fork_cb (EV_P_ ev_fork *fork_w, int revents,void* arg)
 {
   ev_embed *w = (ev_embed *)(((char *)fork_w) - offsetof (ev_embed, fork));
 
@@ -4444,7 +4450,7 @@ ev_embed_start (EV_P_ ev_embed *w) EV_THROW
   {
     EV_P = w->other;
     assert (("libev: loop to be embedded is not embeddable", backend & ev_embeddable_backends ()));
-    ev_io_init (&w->io, embed_io_cb, backend_fd, EV_READ);
+    ev_io_init (&w->io, embed_io_cb, backend_fd, EV_READ,NULL);
   }
 
   EV_FREQUENT_CHECK;
@@ -4452,11 +4458,11 @@ ev_embed_start (EV_P_ ev_embed *w) EV_THROW
   ev_set_priority (&w->io, ev_priority (w));
   ev_io_start (EV_A_ &w->io);
 
-  ev_prepare_init (&w->prepare, embed_prepare_cb);
+  ev_prepare_init (&w->prepare, embed_prepare_cb,NULL);
   ev_set_priority (&w->prepare, EV_MINPRI);
   ev_prepare_start (EV_A_ &w->prepare);
 
-  ev_fork_init (&w->fork, embed_fork_cb);
+  ev_fork_init (&w->fork, embed_fork_cb,NULL);
   ev_fork_start (EV_A_ &w->fork);
 
   /*ev_idle_init (&w->idle, e,bed_idle_cb);*/
@@ -4637,7 +4643,7 @@ once_cb (EV_P_ struct ev_once *once, int revents)
 }
 
 static void
-once_cb_io (EV_P_ ev_io *w, int revents)
+once_cb_io (EV_P_ ev_io *w, int revents,void* arg)
 {
   struct ev_once *once = (struct ev_once *)(((char *)w) - offsetof (struct ev_once, io));
 
@@ -4645,7 +4651,7 @@ once_cb_io (EV_P_ ev_io *w, int revents)
 }
 
 static void
-once_cb_to (EV_P_ ev_timer *w, int revents)
+once_cb_to (EV_P_ ev_timer *w, int revents,void* arg)
 {
   struct ev_once *once = (struct ev_once *)(((char *)w) - offsetof (struct ev_once, to));
 
@@ -4666,14 +4672,14 @@ ev_once (EV_P_ int fd, int events, ev_tstamp timeout, void (*cb)(int revents, vo
   once->cb  = cb;
   once->arg = arg;
 
-  ev_init (&once->io, once_cb_io);
+  ev_init (&once->io, once_cb_io,NULL);
   if (fd >= 0)
     {
       ev_io_set (&once->io, fd, events);
       ev_io_start (EV_A_ &once->io);
     }
 
-  ev_init (&once->to, once_cb_to);
+  ev_init (&once->to, once_cb_to,NULL);
   if (timeout >= 0.)
     {
       ev_timer_set (&once->to, timeout, 0.);
